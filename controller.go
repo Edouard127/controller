@@ -1,4 +1,4 @@
-package tor_controller
+package controller
 
 import (
 	"fmt"
@@ -8,36 +8,6 @@ import (
 	"sync"
 	"time"
 )
-
-type Signal int
-
-const (
-	Reload = iota
-	Shutdown
-	Dump
-	Debug
-	Halt
-	NewCircuit
-	ClearCircuit
-	Heartbeat
-	Dormant
-	Active
-)
-
-func (s Signal) String() string {
-	return [...]string{
-		"RELOAD",
-		"SHUTDOWN",
-		"DUMP",
-		"DEBUG",
-		"HALT",
-		"NEWNYM",
-		"CLEARDNSCACHE",
-		"HEARTBEAT",
-		"DORMANT",
-		"ACTIVE",
-	}[s]
-}
 
 type Controller struct {
 	*textproto.Conn
@@ -105,22 +75,18 @@ func (c *Controller) GetVersion() (string, error) {
 	return c.getInfo("version")
 }
 
-// AuthenticateNone authenticate to controller without password
-func (c *Controller) AuthenticateNone() error {
-	c.mu.Lock()
-	defer c.mu.Unlock()
-	_, _, err := c.makeRequest("AUTHENTICATE")
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-// Authenticate to controller with password.
+// Authenticate authenticates the controller connection
+// If the password is empty, it will authenticate without a password.
 func (c *Controller) Authenticate(password string) error {
 	c.mu.Lock()
 	defer c.mu.Unlock()
-	_, _, err := c.makeRequest("AUTHENTICATE " + password)
+	var req string
+	if password == "" {
+		req = "AUTHENTICATE"
+	} else {
+		req = "AUTHENTICATE " + password
+	}
+	_, _, err := c.makeRequest(req)
 	if err != nil {
 		return err
 	}
